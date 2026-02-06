@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
 import { useGamificationStore } from '@/stores/gamificationStore';
 import { useFeedStore } from '@/stores/feedStore';
 import { Colors, Spacing, FontSizes, FontWeights, BorderRadius, Gamification } from '@/constants/theme';
@@ -128,17 +129,17 @@ export default function ProfileScreen() {
 
         {/* Settings Links */}
         <View style={styles.settingsSection}>
-          <Pressable style={styles.settingsLink}>
+          <Pressable style={styles.settingsLink} onPress={() => router.push('/profile/settings')}>
             <Text style={styles.settingsIcon}>⚙️</Text>
             <Text style={styles.settingsText}>Settings</Text>
             <Text style={styles.settingsArrow}>→</Text>
           </Pressable>
-          <Pressable style={styles.settingsLink}>
+          <Pressable style={styles.settingsLink} onPress={() => router.push('/profile/settings')}>
             <Text style={styles.settingsIcon}>🎯</Text>
             <Text style={styles.settingsText}>Edit Daily Goal</Text>
             <Text style={styles.settingsArrow}>→</Text>
           </Pressable>
-          <Pressable style={styles.settingsLink}>
+          <Pressable style={styles.settingsLink} onPress={() => router.push('/profile/settings')}>
             <Text style={styles.settingsIcon}>🔔</Text>
             <Text style={styles.settingsText}>Notifications</Text>
             <Text style={styles.settingsArrow}>→</Text>

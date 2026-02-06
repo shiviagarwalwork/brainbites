@@ -1,21 +1,41 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, Pressable, Modal, TextInput, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFeedStore } from '@/stores/feedStore';
+import { useStashStore } from '@/stores/stashStore';
 import { Colors, Spacing, FontSizes, FontWeights, BorderRadius } from '@/constants/theme';
 
-const DEFAULT_STASHES = [
-  { id: 'liked', name: 'Liked Cards', icon: '❤️', count: 0, isSystem: true },
-  { id: 'saved', name: 'Saved for Later', icon: '🔖', count: 0, isSystem: true },
-];
+const STASH_ICONS = ['📂', '🧠', '💡', '🔬', '📖', '🎯', '⚡', '🌟', '🎨', '🏗️', '💻', '🌍'];
 
 export default function StashesScreen() {
   const { likedCardIds, savedCardIds } = useFeedStore();
+  const { stashes, createStash, deleteStash } = useStashStore();
 
-  const stashes = [
-    { ...DEFAULT_STASHES[0], count: likedCardIds.size },
-    { ...DEFAULT_STASHES[1], count: savedCardIds.size },
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [newStashName, setNewStashName] = useState('');
+  const [selectedIcon, setSelectedIcon] = useState('📂');
+
+  const systemStashes = [
+    { id: 'liked', name: 'Liked Cards', icon: '❤️', count: likedCardIds.size, isSystem: true },
+    { id: 'saved', name: 'Saved for Later', icon: '🔖', count: savedCardIds.size, isSystem: true },
   ];
+
+  const customStashes = stashes.filter((s) => !s.isSystem);
+
+  const handleCreateStash = () => {
+    if (!newStashName.trim()) return;
+    createStash(newStashName.trim(), undefined, selectedIcon);
+    setNewStashName('');
+    setSelectedIcon('📂');
+    setShowCreateModal(false);
+  };
+
+  const handleDeleteStash = (id: string, name: string) => {
+    Alert.alert('Delete Stash', `Are you sure you want to delete "${name}"?`, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: () => deleteStash(id) },
+    ]);
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -31,13 +51,11 @@ export default function StashesScreen() {
       >
         {/* System Stashes */}
         <View style={styles.section}>
-          {stashes.map((stash) => (
+          <Text style={styles.sectionTitle}>Library</Text>
+          {systemStashes.map((stash) => (
             <Pressable
               key={stash.id}
-              style={({ pressed }) => [
-                styles.stashCard,
-                pressed && styles.stashCardPressed,
-              ]}
+              style={({ pressed }) => [styles.stashCard, pressed && styles.stashCardPressed]}
             >
               <View style={styles.stashIcon}>
                 <Text style={styles.stashIconText}>{stash.icon}</Text>
@@ -46,26 +64,107 @@ export default function StashesScreen() {
                 <Text style={styles.stashName}>{stash.name}</Text>
                 <Text style={styles.stashCount}>{stash.count} cards</Text>
               </View>
-              <Text style={styles.stashArrow}>→</Text>
+              <Text style={styles.stashArrow}>{'\u203A'}</Text>
             </Pressable>
           ))}
         </View>
 
+        {/* Custom Stashes */}
+        {customStashes.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Custom Stashes</Text>
+            {customStashes.map((stash) => (
+              <Pressable
+                key={stash.id}
+                style={({ pressed }) => [styles.stashCard, pressed && styles.stashCardPressed]}
+              >
+                <View style={styles.stashIcon}>
+                  <Text style={styles.stashIconText}>{stash.icon}</Text>
+                </View>
+                <View style={styles.stashInfo}>
+                  <Text style={styles.stashName}>{stash.name}</Text>
+                  <Text style={styles.stashCount}>{stash.cardIds.length} cards</Text>
+                </View>
+                <Pressable
+                  onPress={() => handleDeleteStash(stash.id, stash.name)}
+                  hitSlop={12}
+                  style={styles.deleteButton}
+                >
+                  <Text style={styles.deleteIcon}>{'✕'}</Text>
+                </Pressable>
+              </Pressable>
+            ))}
+          </View>
+        )}
+
         {/* Create Stash Button */}
-        <Pressable style={styles.createButton}>
+        <Pressable style={styles.createButton} onPress={() => setShowCreateModal(true)}>
           <Text style={styles.createIcon}>+</Text>
           <Text style={styles.createText}>Create New Stash</Text>
         </Pressable>
 
-        {/* Empty State for Custom Stashes */}
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyIcon}>📚</Text>
-          <Text style={styles.emptyTitle}>Organize your learning</Text>
-          <Text style={styles.emptyDescription}>
-            Create custom stashes to organize cards by topic, project, or any way you like
-          </Text>
-        </View>
+        {/* Empty State */}
+        {customStashes.length === 0 && (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyIcon}>📚</Text>
+            <Text style={styles.emptyTitle}>Organize your learning</Text>
+            <Text style={styles.emptyDescription}>
+              Create custom stashes to organize cards by topic, project, or any way you like
+            </Text>
+          </View>
+        )}
       </ScrollView>
+
+      {/* Create Stash Modal */}
+      <Modal visible={showCreateModal} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>New Stash</Text>
+
+            <TextInput
+              style={styles.textInput}
+              placeholder="Stash name..."
+              placeholderTextColor={Colors.textTertiary}
+              value={newStashName}
+              onChangeText={setNewStashName}
+              autoFocus
+              maxLength={30}
+            />
+
+            <Text style={styles.iconPickerLabel}>Choose an icon</Text>
+            <View style={styles.iconGrid}>
+              {STASH_ICONS.map((icon) => (
+                <Pressable
+                  key={icon}
+                  style={[styles.iconOption, selectedIcon === icon && styles.iconOptionSelected]}
+                  onPress={() => setSelectedIcon(icon)}
+                >
+                  <Text style={styles.iconOptionText}>{icon}</Text>
+                </Pressable>
+              ))}
+            </View>
+
+            <View style={styles.modalActions}>
+              <Pressable
+                style={styles.modalCancel}
+                onPress={() => {
+                  setShowCreateModal(false);
+                  setNewStashName('');
+                }}
+              >
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.modalCreate, !newStashName.trim() && styles.modalCreateDisabled]}
+                onPress={handleCreateStash}
+                disabled={!newStashName.trim()}
+              >
+                <Text style={styles.modalCreateText}>Create</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -99,6 +198,14 @@ const styles = StyleSheet.create({
   },
   section: {
     gap: Spacing.md,
+  },
+  sectionTitle: {
+    color: Colors.textSecondary,
+    fontSize: FontSizes.sm,
+    fontWeight: FontWeights.semibold,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginBottom: Spacing.xs,
   },
   stashCard: {
     flexDirection: 'row',
@@ -139,7 +246,14 @@ const styles = StyleSheet.create({
   },
   stashArrow: {
     color: Colors.textTertiary,
-    fontSize: FontSizes.xl,
+    fontSize: FontSizes.xxl,
+  },
+  deleteButton: {
+    padding: Spacing.xs,
+  },
+  deleteIcon: {
+    color: Colors.textTertiary,
+    fontSize: FontSizes.md,
   },
   createButton: {
     flexDirection: 'row',
@@ -183,5 +297,92 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: FontSizes.md * 1.5,
     paddingHorizontal: Spacing.xl,
+  },
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: Colors.surface,
+    borderTopLeftRadius: BorderRadius.xxl,
+    borderTopRightRadius: BorderRadius.xxl,
+    padding: Spacing.xl,
+    gap: Spacing.lg,
+    paddingBottom: Spacing.xxxl,
+  },
+  modalTitle: {
+    color: Colors.textPrimary,
+    fontSize: FontSizes.xxl,
+    fontWeight: FontWeights.bold,
+    textAlign: 'center',
+  },
+  textInput: {
+    backgroundColor: Colors.background,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.lg,
+    color: Colors.textPrimary,
+    fontSize: FontSizes.lg,
+    borderWidth: 1,
+    borderColor: Colors.surfaceBorder,
+  },
+  iconPickerLabel: {
+    color: Colors.textSecondary,
+    fontSize: FontSizes.sm,
+    fontWeight: FontWeights.medium,
+  },
+  iconGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+  },
+  iconOption: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: Colors.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconOptionSelected: {
+    backgroundColor: Colors.primary,
+    borderWidth: 2,
+    borderColor: Colors.primary,
+  },
+  iconOptionText: {
+    fontSize: 24,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: Spacing.md,
+    marginTop: Spacing.md,
+  },
+  modalCancel: {
+    flex: 1,
+    padding: Spacing.lg,
+    borderRadius: BorderRadius.lg,
+    backgroundColor: Colors.background,
+    alignItems: 'center',
+  },
+  modalCancelText: {
+    color: Colors.textSecondary,
+    fontSize: FontSizes.lg,
+    fontWeight: FontWeights.semibold,
+  },
+  modalCreate: {
+    flex: 1,
+    padding: Spacing.lg,
+    borderRadius: BorderRadius.lg,
+    backgroundColor: Colors.primary,
+    alignItems: 'center',
+  },
+  modalCreateDisabled: {
+    opacity: 0.4,
+  },
+  modalCreateText: {
+    color: Colors.textPrimary,
+    fontSize: FontSizes.lg,
+    fontWeight: FontWeights.bold,
   },
 });
