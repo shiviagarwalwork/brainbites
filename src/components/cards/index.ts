@@ -6,3 +6,4 @@ export { VisionaryCard } from './VisionaryCard';
 export { BookSummaryCard } from './BookSummaryCard';
 export { ConceptCard } from './ConceptCard';
 export { ChallengeCard } from './ChallengeCard';
+export { FlashcardCard } from './FlashcardCard';

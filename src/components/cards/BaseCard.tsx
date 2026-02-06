@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, Pressable, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Dimensions, Share } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { useFeedStore } from '@/stores/feedStore';
@@ -67,10 +67,23 @@ export function BaseCard({
     }
   };
 
-  const handleShare = () => {
+  const handleShare = async () => {
     haptics.share();
     shareCard(card.id);
-    // TODO: Implement native share
+    try {
+      const cardTitle = 'title' in card ? (card as any).title :
+        'fact' in card ? 'Mind-Blowing Fact' :
+        'quote' in card ? (card as any).attribution + ' Quote' :
+        'concept' in card ? (card as any).concept :
+        'front' in card ? 'Flashcard' :
+        'BrainBites Card';
+      await Share.share({
+        message: `Check out this from BrainBites: "${cardTitle}" - Download BrainBites to learn more!`,
+        title: 'Shared from BrainBites',
+      });
+    } catch (_error) {
+      // User cancelled or share failed
+    }
   };
 
   return (

@@ -7,6 +7,7 @@ import { VisionaryCard } from '../cards/VisionaryCard';
 import { BookSummaryCard } from '../cards/BookSummaryCard';
 import { ConceptCard } from '../cards/ConceptCard';
 import { ChallengeCard } from '../cards/ChallengeCard';
+import { FlashcardCard } from '../cards/FlashcardCard';
 
 interface CardRendererProps {
   card: FeedCard;
@@ -21,13 +22,14 @@ const CARD_COMPONENTS: Record<string, React.ComponentType<{ card: any; isActive:
   book_summary: BookSummaryCard,
   concept: ConceptCard,
   challenge: ChallengeCard,
+  flashcard: FlashcardCard,
 };
 
 export function CardRenderer({ card, isActive }: CardRendererProps) {
   const Component = CARD_COMPONENTS[card.type];
 
   if (!Component) {
-    console.warn(`Unknown card type: ${card.type}`);
+    if (__DEV__) console.warn(`Unknown card type: ${card.type}`);
     return null;
   }
 
